@@ -1,8 +1,8 @@
 import BaseTableCell from '../-private/base-table-cell';
 
-import { action, computed } from '@ember-decorators/object';
+import { action, computed, observes } from '@ember-decorators/object';
 import { alias, readOnly } from '@ember-decorators/object/computed';
-import { tagName } from '@ember-decorators/component';
+import { attribute, tagName } from '@ember-decorators/component';
 import { argument } from '@ember-decorators/argument';
 import { type, optional } from '@ember-decorators/argument/type';
 import { Action } from '@ember-decorators/argument/types';
@@ -37,8 +37,14 @@ import { SELECT_MODE } from '../../-private/collapse-tree';
   @yield {object} columnMeta - The meta object associated with the column
   @yield {object} rowMeta - The meta object associated with the row
 */
+
 @tagName('td')
 export default class EmberTd extends BaseTableCell {
+
+	@attribute hidden = false;
+
+	@attribute ('rowspan') rowSpan = null;
+
   /**
     The API object passed in by the table row
   */
@@ -59,6 +65,10 @@ export default class EmberTd extends BaseTableCell {
   @argument
   @type(optional(Action))
   onDoubleClick;
+
+  @argument({ defaultIfUndefined: true })
+	@type('boolean')
+	rowSpanEnabled = false;
 
   @computed('api') // only watch `api` due to a bug in Ember
   get unwrappedApi() {
@@ -94,8 +104,43 @@ export default class EmberTd extends BaseTableCell {
 
   init() {
     super.init(...arguments);
-
     this.layout = layout;
+		this.setRowSpan();
+  }
+
+  setRowSpan() {
+	  if (this.rowSpanEnabled) {
+			let currIndex = this.rowMeta.index;
+			const rowMetaArray = [...this.rowMeta._tree.rowMetaCache];
+			let span = 1;
+
+			while (1) {
+				const nextRow = rowMetaArray.filter(([k, v]) => v.index == currIndex + 1)[0];
+				if (nextRow && nextRow[0] && nextRow[0][this.columnValue.valuePath] == this.cellValue) {
+					span++;
+					this.set('rowSpan', span);
+				}
+				else {
+					break;
+				}
+				currIndex++;
+			}
+
+			if (this.rowMeta.prev && this.rowMeta.prev[this.columnValue.valuePath] == this.cellValue) {
+				this.set('hidden', true);
+			}
+			else {
+				this.set('hidden', false);
+			}
+    }
+    else {
+			this.set('hidden', false);
+		}
+  }
+
+  @observes('rowMeta.index')
+  indexObserver() {
+	  this.setRowSpan();
   }
 
   @computed('rowMeta.depth')

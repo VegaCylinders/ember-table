@@ -43,7 +43,7 @@ export default class EmberTd extends BaseTableCell {
 
 	@attribute hidden = false;
 
-	@attribute ('rowspan') rowSpan = null;
+	@attribute ('rowspan') rowSpan = 1;
 
   /**
     The API object passed in by the table row
@@ -109,36 +109,34 @@ export default class EmberTd extends BaseTableCell {
   }
 
   setRowSpan() {
+	  this.set('rowSpan', 1);
+	  this.set('hidden', false);
 	  if (this.rowSpanEnabled) {
-			let currIndex = this.rowMeta.index;
-			const rowMetaArray = [...this.rowMeta._tree.rowMetaCache];
-			let span = 1;
-
-			while (1) {
-				const nextRow = rowMetaArray.filter(([k, v]) => v.index == currIndex + 1)[0];
-				if (nextRow && nextRow[0] && nextRow[0][this.columnValue.valuePath] == this.cellValue) {
-					span++;
-					this.set('rowSpan', span);
-				}
-				else {
-					break;
-				}
-				currIndex++;
-			}
 
 			if (this.rowMeta.prev && this.rowMeta.prev[this.columnValue.valuePath] == this.cellValue) {
 				this.set('hidden', true);
 			}
 			else {
-				this.set('hidden', false);
+				let currIndex = this.rowMeta.index;
+				const rowMetaArray = [...this.rowMeta._tree.rowMetaCache];
+				let span = 1;
+
+				while (1) {
+					const nextRow = rowMetaArray.filter(([k, v]) => v.index == currIndex + 1)[0];
+					if (nextRow && nextRow[0] && nextRow[0][this.columnValue.valuePath] == this.cellValue) {
+						span++;
+						this.set('rowSpan', span);
+					}
+					else {
+						break;
+					}
+					currIndex++;
+				}
 			}
     }
-    else {
-			this.set('hidden', false);
-		}
   }
 
-  @observes('rowMeta.index')
+  @observes('rowMeta._tree.rowMetaCache')
   indexObserver() {
 	  this.setRowSpan();
   }
